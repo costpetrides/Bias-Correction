@@ -72,7 +72,7 @@
     font-size: 22px;
     margin: 32px 0 12px;
   }
-  .years {
+  .years, .map-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
@@ -184,7 +184,7 @@
   <h2>Countries</h2>
   <div class="years" id="countries"></div>
   <h2>Maps</h2>
-  <div class="years" id="maps"></div>
+  <div class="map-grid" id="maps"></div>
   <h2>2015 parameter search</h2>
   <p class="note">Fitted once on 2015. The same (p, k) is then applied to 2022, 2023 and 2024.</p>
   <div class="years" id="search"></div>
@@ -261,7 +261,7 @@ function gallery() {
 }
 
 function plotCaption(img) {
-  const box = img.closest(".years");
+  const box = img.closest(".years, .map-grid");
   let heading = "";
   if (box) {
     let el = box.previousElementSibling;
@@ -353,16 +353,16 @@ async function render() {
   document.getElementById("countries").replaceChildren(...YEARS.map(year =>
     yearColumn(year, [figure(`${root(year)}/country.png`, "Country means")])
   ));
-  document.getElementById("maps").replaceChildren(...YEARS.map(year => {
-    const plots = [
-      figure(`${root(year)}/emep.png`, "Raw EMEP"),
-      figure(`${root(year)}/corrected.png`, year === "2015" ? "Corrected base" : "Corrected scenario")
-    ];
-    if (year === "2015") {
-      plots.splice(1, 0, figure(`${root(year)}/bias.png`, method === "Additive" ? "Bias" : "Bias ratio"));
-    }
-    return yearColumn(year, plots);
-  }));
+  const biasSrc = `${root("2015")}/bias.png`;
+  const biasLabel = method === "Additive" ? "Interpolated bias" : "Interpolated bias ratio";
+  document.getElementById("maps").replaceChildren(
+    ...YEARS.map(year => figure(`${root(year)}/emep.png`, `${year} raw EMEP`)),
+    ...YEARS.map(year => figure(biasSrc, `${year} ${biasLabel}`)),
+    ...YEARS.map(year => figure(
+      `${root(year)}/corrected.png`,
+      year === "2015" ? "2015 corrected base" : `${year} corrected scenario`
+    ))
+  );
   const searchRoot = root("2015");
   document.getElementById("search").replaceChildren(
     yearColumn("RMSE", [figure(`${searchRoot}/rmse_heatmap.png`, "RMSE")]),
