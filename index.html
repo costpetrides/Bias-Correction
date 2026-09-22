@@ -14,7 +14,6 @@
     --accent: #1e4d3a;
     --accent-soft: #e7f0eb;
     --raw: #9a3412;
-    --corrected: #1e4d3a;
   }
   * { box-sizing: border-box; }
   body {
@@ -23,11 +22,8 @@
     background: var(--paper);
     font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
   }
-  header {
-    padding: 28px 24px 8px;
-    max-width: 1180px;
-    margin: 0 auto;
-  }
+  header, main { max-width: 1400px; margin: 0 auto; }
+  header { padding: 28px 24px 8px; }
   h1 {
     margin: 0 0 6px;
     font-family: Georgia, "Iowan Old Style", serif;
@@ -35,7 +31,7 @@
     font-size: 32px;
     letter-spacing: -0.02em;
   }
-  header p { margin: 0; color: var(--muted); max-width: 720px; }
+  header p, .note { margin: 0; color: var(--muted); max-width: 760px; }
   .controls {
     position: sticky;
     top: 0;
@@ -46,7 +42,7 @@
     padding: 12px 24px;
   }
   .controls-inner {
-    max-width: 1180px;
+    max-width: 1400px;
     margin: 0 auto;
     display: flex;
     flex-wrap: wrap;
@@ -68,34 +64,25 @@
     border-color: var(--accent);
     color: white;
   }
-  main { max-width: 1180px; margin: 0 auto; padding: 20px 24px 48px; }
-  .note { color: var(--muted); margin: 0 0 16px; }
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
-    margin-bottom: 22px;
-  }
-  .card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 12px 14px;
-  }
-  .card .k { color: var(--muted); font-size: 12px; }
-  .card .v { font-variant-numeric: tabular-nums; font-size: 22px; margin-top: 2px; }
-  .card .v.better { color: var(--corrected); }
+  main { padding: 20px 24px 48px; }
+  .note { margin-bottom: 16px; }
   h2 {
     font-family: Georgia, "Iowan Old Style", serif;
     font-weight: 500;
     font-size: 22px;
-    margin: 28px 0 12px;
+    margin: 32px 0 12px;
   }
-  .gallery {
+  .years {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
   }
+  .year h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 650;
+  }
+  .stack { display: grid; gap: 10px; }
   figure {
     margin: 0;
     background: var(--card);
@@ -104,73 +91,65 @@
     overflow: hidden;
   }
   figure img { width: 100%; height: auto; display: block; background: white; }
-  figcaption { padding: 8px 12px 12px; color: var(--muted); font-size: 14px; }
+  figcaption { padding: 8px 10px 10px; color: var(--muted); font-size: 13px; }
   .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
   table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
   th { color: var(--muted); font-weight: 600; background: #fbfaf7; }
   tr:last-child td { border-bottom: 0; }
-  .downloads { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .better { color: var(--accent); font-weight: 650; }
+  .downloads { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
   .downloads a {
     color: var(--accent);
     background: var(--accent-soft);
     text-decoration: none;
     border-radius: 999px;
     padding: 6px 12px;
+    font-size: 14px;
   }
-  .hidden { display: none; }
   #status { color: var(--raw); }
+  @media (max-width: 980px) {
+    .years { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .years { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
 <header>
   <h1>IDW bias correction</h1>
-  <p>Station comparison of the raw EMEP field and the bias-corrected field. Plots and result tables only. Model files and the original observations are not in this repository.</p>
+  <p>One page for a pollutant and a method, with 2015 and the three scenario years together.</p>
 </header>
 <div class="controls">
   <div class="controls-inner">
-    <div class="group" id="pollutant" data-key="pollutant">
-      <span>Pollutant</span>
-    </div>
-    <div class="group" id="method" data-key="method">
-      <span>Method</span>
-    </div>
-    <div class="group" id="year" data-key="year">
-      <span>Year</span>
-    </div>
+    <div class="group" id="pollutant" data-key="pollutant"><span>Pollutant</span></div>
+    <div class="group" id="method" data-key="method"><span>Method</span></div>
   </div>
 </div>
 <main>
   <p class="note" id="note"></p>
   <p id="status"></p>
-  <div class="cards" id="cards"></div>
-  <h2>Fields</h2>
-  <div class="gallery" id="fields"></div>
+  <h2>All years</h2>
+  <div class="table-wrap"><table id="summary"></table></div>
   <h2>Stations</h2>
-  <div class="gallery" id="stations"></div>
-  <div id="search-block">
-    <h2>Parameter search</h2>
-    <p class="note">The (p, k) pair is the one with the lowest RMSE on the 2015 cross-validation stations.</p>
-    <div class="gallery" id="search"></div>
-  </div>
+  <div class="years" id="scatters"></div>
   <h2>Countries</h2>
-  <div class="table-wrap"><table id="countries"></table></div>
+  <div class="years" id="countries"></div>
+  <h2>Maps</h2>
+  <div class="years" id="maps"></div>
+  <h2>2015 parameter search</h2>
+  <p class="note">Fitted once on 2015. The same (p, k) is then applied to 2022, 2023 and 2024.</p>
+  <div class="years" id="search"></div>
+  <h2>Tables</h2>
   <div class="downloads" id="downloads"></div>
 </main>
 <script>
-const POLLUTANTS = [
-  ["NO2", "NO₂"],
-  ["O3", "O₃"],
-  ["PM25", "PM2.5"]
-];
-const METHODS = [
-  ["IDW_ADD", "Additive"],
-  ["IDW_MULT", "Multiplicative"]
-];
+const POLLUTANTS = [["NO2", "NO₂"], ["O3", "O₃"], ["PM25", "PM2.5"]];
+const METHODS = [["IDW_ADD", "Additive"], ["IDW_MULT", "Multiplicative"]];
 const YEARS = ["2015", "2022", "2023", "2024"];
-
-const state = { pollutant: "NO2", method: "IDW_ADD", year: "2015" };
+const state = { pollutant: "NO2", method: "IDW_ADD" };
 
 function buttons(container, items, key) {
   const el = document.getElementById(container);
@@ -181,7 +160,7 @@ function buttons(container, items, key) {
     b.dataset.id = id;
     b.addEventListener("click", () => {
       state[key] = id;
-      location.hash = `${state.pollutant}/${state.method}/${state.year}`;
+      location.hash = `${state.pollutant}/${state.method}`;
       render();
     });
     el.appendChild(b);
@@ -189,7 +168,6 @@ function buttons(container, items, key) {
 }
 buttons("pollutant", POLLUTANTS, "pollutant");
 buttons("method", METHODS, "method");
-buttons("year", YEARS.map(y => [y, y]), "year");
 
 function markPressed() {
   document.querySelectorAll(".group button").forEach(b => {
@@ -198,8 +176,8 @@ function markPressed() {
   });
 }
 
-function base() {
-  return `results/${state.pollutant}/${state.method}/${state.year}`;
+function root(year) {
+  return `results/${state.pollutant}/${state.method}/${year}`;
 }
 
 function num(value, digits = 2) {
@@ -219,6 +197,18 @@ function figure(src, caption) {
   return f;
 }
 
+function yearColumn(year, nodes) {
+  const section = document.createElement("section");
+  section.className = "year";
+  const title = document.createElement("h3");
+  title.textContent = year === "2015" ? "2015 cross-validation" : year;
+  const stack = document.createElement("div");
+  stack.className = "stack";
+  stack.append(...nodes);
+  section.append(title, stack);
+  return section;
+}
+
 async function readCsv(url) {
   const response = await fetch(url);
   if (!response.ok) throw new Error(url);
@@ -233,113 +223,92 @@ async function readCsv(url) {
   });
 }
 
-function card(label, value, better) {
-  const el = document.createElement("div");
-  el.className = "card";
-  el.innerHTML = `<div class="k">${label}</div><div class="v${better ? " better" : ""}">${value}</div>`;
-  return el;
-}
-
 let renderToken = 0;
 
 async function render() {
   const token = ++renderToken;
   markPressed();
-  const year = state.year;
   const label = POLLUTANTS.find(p => p[0] === state.pollutant)[1];
   const method = METHODS.find(m => m[0] === state.method)[1];
-  const note = document.getElementById("note");
-  note.textContent = year === "2015"
-    ? `${label} · ${method} · 2015. NILU cross-validation: Active = 0 stations only. The bias was fitted on Active = 1.`
-    : `${label} · ${method} · ${year}. Every station in the yearly observation file, compared with the raw EMEP scenario and the bias-corrected scenario.`;
+  document.getElementById("note").textContent =
+    `${label} · ${method}. 2015 scores the Active = 0 stations. 2022–2024 score every station in that year's file.`;
+  document.getElementById("status").textContent = "";
 
-  const status = document.getElementById("status");
-  status.textContent = "";
-  const root = base();
-
-  document.getElementById("fields").replaceChildren(
-    figure(`${root}/emep.png`, year === "2015" ? "Raw EMEP 2015" : `Raw EMEP ${year}`),
-    ...(year === "2015" ? [figure(`${root}/bias.png`, method === "Additive" ? "Interpolated bias" : "Interpolated bias ratio")] : []),
-    figure(`${root}/corrected.png`, year === "2015" ? "Corrected 2015" : `Corrected scenario ${year}`)
-  );
-  document.getElementById("stations").replaceChildren(
-    figure(`${root}/scatter.png`, "Stations: observation against model"),
-    figure(`${root}/country.png`, "Country means")
-  );
-  const searchBlock = document.getElementById("search-block");
-  searchBlock.classList.toggle("hidden", year !== "2015");
-  if (year === "2015") {
-    document.getElementById("search").replaceChildren(
-      figure(`${root}/rmse_heatmap.png`, "RMSE over p and k"),
-      figure(`${root}/mae_heatmap.png`, "MAE over p and k"),
-      figure(`${root}/mbe_heatmap.png`, "MBE over p and k")
-    );
-  }
-
-  try {
-    const summary = (await readCsv(`${root}/summary.csv`))[0];
-    if (token !== renderToken) return;
-    const metricCards = [
-      card("Stations", summary.N),
-      card("RMSE raw", num(summary.RMSE_Raw)),
-      card("RMSE corrected", num(summary.RMSE_Corrected), true),
-      card("MAE corrected", num(summary.MAE_Corrected)),
-      card("Bias corrected", num(summary.Bias_Corrected)),
-      card("R² corrected", num(summary.R2true_Corrected))
+  document.getElementById("scatters").replaceChildren(...YEARS.map(year =>
+    yearColumn(year, [figure(`${root(year)}/scatter.png`, "Observed against model")])
+  ));
+  document.getElementById("countries").replaceChildren(...YEARS.map(year =>
+    yearColumn(year, [figure(`${root(year)}/country.png`, "Country means")])
+  ));
+  document.getElementById("maps").replaceChildren(...YEARS.map(year => {
+    const plots = [
+      figure(`${root(year)}/emep.png`, "Raw EMEP"),
+      figure(`${root(year)}/corrected.png`, year === "2015" ? "Corrected base" : "Corrected scenario")
     ];
     if (year === "2015") {
-      const best = (await readCsv(`${root}/best_params.csv`))[0];
-      if (token !== renderToken) return;
-      metricCards.push(
-        card("Best p", num(best.p, 1)),
-        card("Best k", String(Math.round(Number(best.k))))
-      );
+      plots.splice(1, 0, figure(`${root(year)}/bias.png`, method === "Additive" ? "Bias" : "Bias ratio"));
     }
-    document.getElementById("cards").replaceChildren(...metricCards);
+    return yearColumn(year, plots);
+  }));
+  const searchRoot = root("2015");
+  document.getElementById("search").replaceChildren(
+    yearColumn("RMSE", [figure(`${searchRoot}/rmse_heatmap.png`, "RMSE")]),
+    yearColumn("MAE", [figure(`${searchRoot}/mae_heatmap.png`, "MAE")]),
+    yearColumn("MBE", [figure(`${searchRoot}/mbe_heatmap.png`, "MBE")])
+  );
 
-    const countries = await readCsv(`${root}/country.csv`);
+  const downloads = document.getElementById("downloads");
+  downloads.replaceChildren(...YEARS.flatMap(year => {
+    const files = [["summary.csv", "Summary"], ["country.csv", "Countries"], ["stations.csv", "Stations"]];
+    if (year === "2015") files.push(["best_params.csv", "Best p, k"], ["idw_search.csv", "All p, k"]);
+    return files.map(([file, name]) => {
+      const a = document.createElement("a");
+      a.href = `${root(year)}/${file}`;
+      a.textContent = `${year} ${name}`;
+      return a;
+    });
+  }));
+
+  try {
+    const rows = await Promise.all(YEARS.map(year => readCsv(`${root(year)}/summary.csv`).then(r => r[0])));
+    const best = (await readCsv(`${root("2015")}/best_params.csv`))[0];
     if (token !== renderToken) return;
-    const headers = ["Country", "N", "RMSE raw", "RMSE corrected", "Bias raw", "Bias corrected", "R² raw", "R² corrected"];
-    const keys = ["Country", "N", "RMSE_Raw", "RMSE_Corrected", "Bias_Raw", "Bias_Corrected", "R2_Raw", "R2_Corrected"];
-    const table = document.getElementById("countries");
+    const headers = ["Year", "Stations", "RMSE raw", "RMSE corrected", "MAE corrected", "Bias corrected", "R² corrected", "p", "k"];
+    const table = document.getElementById("summary");
     table.innerHTML = "<thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr></thead>";
     const body = document.createElement("tbody");
-    countries.forEach(row => {
+    rows.forEach((row, i) => {
       const tr = document.createElement("tr");
-      keys.forEach((key, i) => {
+      const cells = [
+        YEARS[i],
+        row.N,
+        num(row.RMSE_Raw),
+        num(row.RMSE_Corrected),
+        num(row.MAE_Corrected),
+        num(row.Bias_Corrected),
+        num(row.R2true_Corrected),
+        i === 0 ? num(best.p, 1) : "—",
+        i === 0 ? String(Math.round(Number(best.k))) : "—"
+      ];
+      cells.forEach((value, j) => {
         const td = document.createElement("td");
-        td.textContent = i < 2 ? row[key] : num(row[key]);
+        td.textContent = value;
+        if (j === 3) td.className = "better";
         tr.appendChild(td);
       });
       body.appendChild(tr);
     });
     table.appendChild(body);
   } catch (error) {
-    status.textContent = "Could not load the tables for this selection.";
+    if (token === renderToken) document.getElementById("status").textContent = "Could not load the summary table.";
   }
-
-  if (token !== renderToken) return;
-  const downloads = document.getElementById("downloads");
-  const links = [
-    ["summary.csv", "Summary"],
-    ["country.csv", "Countries"],
-    ["stations.csv", "Stations"]
-  ];
-  if (year === "2015") links.push(["idw_search.csv", "All (p, k) scores"], ["best_params.csv", "Best (p, k)"]);
-  downloads.replaceChildren(...links.map(([file, label]) => {
-    const a = document.createElement("a");
-    a.href = `${root}/${file}`;
-    a.textContent = label;
-    return a;
-  }));
 }
 
 function readHash() {
   const parts = location.hash.replace(/^#/, "").split("/");
-  if (parts.length === 3 && POLLUTANTS.some(p => p[0] === parts[0]) && METHODS.some(m => m[0] === parts[1]) && YEARS.includes(parts[2])) {
+  if (parts.length >= 2 && POLLUTANTS.some(p => p[0] === parts[0]) && METHODS.some(m => m[0] === parts[1])) {
     state.pollutant = parts[0];
     state.method = parts[1];
-    state.year = parts[2];
   }
 }
 window.addEventListener("hashchange", () => { readHash(); render(); });

@@ -2,7 +2,7 @@
 
 Static view of the IDW bias-correction results for NO₂, O₃ and PM2.5.
 
-Open `index.html` and choose a pollutant, a method and a year. The address keeps the selection, for example `#NO2/IDW_ADD/2015`.
+Open `index.html` and choose a pollutant and a method. The page shows 2015, 2022, 2023 and 2024 together. The address keeps the selection, for example `#NO2/IDW_ADD`.
 
 ## How the files are split
 
