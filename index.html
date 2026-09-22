@@ -386,7 +386,7 @@ async function render() {
     const rows = await Promise.all(YEARS.map(year => readCsv(`${root(year)}/summary.csv`).then(r => r[0])));
     const best = (await readCsv(`${root("2015")}/best_params.csv`))[0];
     if (token !== renderToken) return;
-    const headers = ["Year", "Stations", "RMSE raw", "RMSE corrected", "MAE corrected", "Bias corrected", "R² corrected", "p", "k"];
+    const headers = ["Year", "Stations", "RMSE raw", "RMSE corrected", "MAE raw", "MAE corrected", "Bias raw", "Bias corrected", "R² raw", "R² corrected", "p", "k"];
     const table = document.getElementById("summary");
     table.innerHTML = "<thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr></thead>";
     const body = document.createElement("tbody");
@@ -397,8 +397,11 @@ async function render() {
         row.N,
         num(row.RMSE_Raw),
         num(row.RMSE_Corrected),
+        num(row.MAE_Raw),
         num(row.MAE_Corrected),
+        num(row.Bias_Raw),
         num(row.Bias_Corrected),
+        num(row.R2true_Raw),
         num(row.R2true_Corrected),
         i === 0 ? num(best.p, 1) : "—",
         i === 0 ? String(Math.round(Number(best.k))) : "—"
