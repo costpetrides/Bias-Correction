@@ -240,7 +240,10 @@ function card(label, value, better) {
   return el;
 }
 
+let renderToken = 0;
+
 async function render() {
+  const token = ++renderToken;
   markPressed();
   const year = state.year;
   const label = POLLUTANTS.find(p => p[0] === state.pollutant)[1];
@@ -275,24 +278,27 @@ async function render() {
 
   try {
     const summary = (await readCsv(`${root}/summary.csv`))[0];
-    const cards = document.getElementById("cards");
-    cards.replaceChildren(
+    if (token !== renderToken) return;
+    const metricCards = [
       card("Stations", summary.N),
       card("RMSE raw", num(summary.RMSE_Raw)),
       card("RMSE corrected", num(summary.RMSE_Corrected), true),
       card("MAE corrected", num(summary.MAE_Corrected)),
       card("Bias corrected", num(summary.Bias_Corrected)),
       card("R² corrected", num(summary.R2true_Corrected))
-    );
+    ];
     if (year === "2015") {
       const best = (await readCsv(`${root}/best_params.csv`))[0];
-      cards.append(
+      if (token !== renderToken) return;
+      metricCards.push(
         card("Best p", num(best.p, 1)),
         card("Best k", String(Math.round(Number(best.k))))
       );
     }
+    document.getElementById("cards").replaceChildren(...metricCards);
 
     const countries = await readCsv(`${root}/country.csv`);
+    if (token !== renderToken) return;
     const headers = ["Country", "N", "RMSE raw", "RMSE corrected", "Bias raw", "Bias corrected", "R² raw", "R² corrected"];
     const keys = ["Country", "N", "RMSE_Raw", "RMSE_Corrected", "Bias_Raw", "Bias_Corrected", "R2_Raw", "R2_Corrected"];
     const table = document.getElementById("countries");
@@ -312,6 +318,7 @@ async function render() {
     status.textContent = "Could not load the tables for this selection.";
   }
 
+  if (token !== renderToken) return;
   const downloads = document.getElementById("downloads");
   const links = [
     ["summary.csv", "Summary"],
