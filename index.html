@@ -90,8 +90,54 @@
     border-radius: 12px;
     overflow: hidden;
   }
-  figure img { width: 100%; height: auto; display: block; background: white; }
+  figure img { width: 100%; height: auto; display: block; background: white; cursor: zoom-in; }
   figcaption { padding: 8px 10px 10px; color: var(--muted); font-size: 13px; }
+  #viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    background: rgba(12, 16, 20, 0.94);
+    align-items: center;
+    justify-content: center;
+  }
+  #viewer.open { display: flex; }
+  #viewer img {
+    max-width: calc(100vw - 140px);
+    max-height: 86vh;
+    object-fit: contain;
+    background: white;
+  }
+  #viewer .caption {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 18px;
+    text-align: center;
+    color: white;
+    font-size: 15px;
+  }
+  #viewer button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 0;
+    background: rgba(255, 255, 255, 0.16);
+    color: white;
+    font-size: 28px;
+    line-height: 1;
+  }
+  #viewer .prev { left: 16px; }
+  #viewer .next { right: 16px; }
+  #viewer .close {
+    top: 16px;
+    right: 16px;
+    transform: none;
+    font-size: 22px;
+  }
   .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
   table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
@@ -145,6 +191,13 @@
   <h2>Tables</h2>
   <div class="downloads" id="downloads"></div>
 </main>
+<div id="viewer" role="dialog" aria-modal="true" aria-label="Plot">
+  <button class="close" type="button" aria-label="Close">×</button>
+  <button class="prev" type="button" aria-label="Previous plot">‹</button>
+  <img alt="">
+  <button class="next" type="button" aria-label="Next plot">›</button>
+  <div class="caption"></div>
+</div>
 <script>
 const POLLUTANTS = [["NO2", "NO₂"], ["O3", "O₃"], ["PM25", "PM2.5"]];
 const METHODS = [["IDW_ADD", "Additive"], ["IDW_MULT", "Multiplicative"]];
@@ -194,8 +247,67 @@ function figure(src, caption) {
   const cap = document.createElement("figcaption");
   cap.textContent = caption;
   f.append(img, cap);
+  img.addEventListener("click", () => openViewer(img));
   return f;
 }
+
+const viewer = document.getElementById("viewer");
+const viewerImg = viewer.querySelector("img");
+const viewerCaption = viewer.querySelector(".caption");
+let viewerIndex = 0;
+
+function gallery() {
+  return [...document.querySelectorAll("main img")];
+}
+
+function plotCaption(img) {
+  const box = img.closest(".years");
+  let heading = "";
+  if (box) {
+    let el = box.previousElementSibling;
+    while (el && el.tagName !== "H2") el = el.previousElementSibling;
+    heading = el ? el.textContent : "";
+  }
+  const year = img.closest(".year")?.querySelector("h3")?.textContent || "";
+  return [heading, year, img.alt].filter(Boolean).join(" · ");
+}
+
+function showViewer(index) {
+  const images = gallery();
+  if (!images.length) return;
+  viewerIndex = (index + images.length) % images.length;
+  const img = images[viewerIndex];
+  viewerImg.src = img.src;
+  viewerImg.alt = img.alt;
+  viewerCaption.textContent = `${plotCaption(img)}  ·  ${viewerIndex + 1} / ${images.length}`;
+  viewer.classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function openViewer(img) {
+  showViewer(gallery().indexOf(img));
+}
+
+function closeViewer() {
+  viewer.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+viewer.querySelector(".close").addEventListener("click", closeViewer);
+viewer.querySelector(".prev").addEventListener("click", () => showViewer(viewerIndex - 1));
+viewer.querySelector(".next").addEventListener("click", () => showViewer(viewerIndex + 1));
+viewer.addEventListener("click", event => {
+  if (event.target === viewer) closeViewer();
+});
+document.addEventListener("keydown", event => {
+  if (!viewer.classList.contains("open")) return;
+  if (event.key === "Escape") closeViewer();
+  if (event.key === "ArrowRight") showViewer(viewerIndex + 1);
+  if (event.key === "ArrowLeft") showViewer(viewerIndex - 1);
+  if (event.key === "Escape" || event.key === "ArrowRight" || event.key === "ArrowLeft") {
+    event.preventDefault();
+  }
+});
 
 function yearColumn(year, nodes) {
   const section = document.createElement("section");
@@ -227,6 +339,7 @@ let renderToken = 0;
 
 async function render() {
   const token = ++renderToken;
+  closeViewer();
   markPressed();
   const label = POLLUTANTS.find(p => p[0] === state.pollutant)[1];
   const method = METHODS.find(m => m[0] === state.method)[1];
