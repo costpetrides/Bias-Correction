@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bias correction results</title>
+<style>
+  :root {
+    --ink: #1c2430;
+    --muted: #5c6775;
+    --line: #d8dee6;
+    --paper: #f6f4ef;
+    --card: #fff;
+    --accent: #1e4d3a;
+    --accent-soft: #e7f0eb;
+    --raw: #9a3412;
+    --corrected: #1e4d3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--paper);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    padding: 28px 24px 8px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  h1 {
+    margin: 0 0 6px;
+    font-family: Georgia, "Iowan Old Style", serif;
+    font-weight: 500;
+    font-size: 32px;
+    letter-spacing: -0.02em;
+  }
+  header p { margin: 0; color: var(--muted); max-width: 720px; }
+  .controls {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(246, 244, 239, 0.94);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 24px;
+  }
+  .controls-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .group span { color: var(--muted); font-size: 13px; min-width: 72px; }
+  button {
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font: inherit;
+    cursor: pointer;
+  }
+  button[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 20px 24px 48px; }
+  .note { color: var(--muted); margin: 0 0 16px; }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .card .k { color: var(--muted); font-size: 12px; }
+  .card .v { font-variant-numeric: tabular-nums; font-size: 22px; margin-top: 2px; }
+  .card .v.better { color: var(--corrected); }
+  h2 {
+    font-family: Georgia, "Iowan Old Style", serif;
+    font-weight: 500;
+    font-size: 22px;
+    margin: 28px 0 12px;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+  }
+  figure {
+    margin: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  figure img { width: 100%; height: auto; display: block; background: white; }
+  figcaption { padding: 8px 12px 12px; color: var(--muted); font-size: 14px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 14px; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; background: #fbfaf7; }
+  tr:last-child td { border-bottom: 0; }
+  .downloads { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .downloads a {
+    color: var(--accent);
+    background: var(--accent-soft);
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 6px 12px;
+  }
+  .hidden { display: none; }
+  #status { color: var(--raw); }
+</style>
+</head>
+<body>
+<header>
+  <h1>IDW bias correction</h1>
+  <p>Station comparison of the raw EMEP field and the bias-corrected field. Plots and result tables only. Model files and the original observations are not in this repository.</p>
+</header>
+<div class="controls">
+  <div class="controls-inner">
+    <div class="group" id="pollutant" data-key="pollutant">
+      <span>Pollutant</span>
+    </div>
+    <div class="group" id="method" data-key="method">
+      <span>Method</span>
+    </div>
+    <div class="group" id="year" data-key="year">
+      <span>Year</span>
+    </div>
+  </div>
+</div>
+<main>
+  <p class="note" id="note"></p>
+  <p id="status"></p>
+  <div class="cards" id="cards"></div>
+  <h2>Fields</h2>
+  <div class="gallery" id="fields"></div>
+  <h2>Stations</h2>
+  <div class="gallery" id="stations"></div>
+  <div id="search-block">
+    <h2>Parameter search</h2>
+    <p class="note">The (p, k) pair is the one with the lowest RMSE on the 2015 cross-validation stations.</p>
+    <div class="gallery" id="search"></div>
+  </div>
+  <h2>Countries</h2>
+  <div class="table-wrap"><table id="countries"></table></div>
+  <div class="downloads" id="downloads"></div>
+</main>
+<script>
+const POLLUTANTS = [
+  ["NO2", "NO₂"],
+  ["O3", "O₃"],
+  ["PM25", "PM2.5"]
+];
+const METHODS = [
+  ["IDW_ADD", "Additive"],
+  ["IDW_MULT", "Multiplicative"]
+];
+const YEARS = ["2015", "2022", "2023", "2024"];
+
+const state = { pollutant: "NO2", method: "IDW_ADD", year: "2015" };
+
+function buttons(container, items, key) {
+  const el = document.getElementById(container);
+  items.forEach(([id, label]) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = label;
+    b.dataset.id = id;
+    b.addEventListener("click", () => {
+      state[key] = id;
+      location.hash = `${state.pollutant}/${state.method}/${state.year}`;
+      render();
+    });
+    el.appendChild(b);
+  });
+}
+buttons("pollutant", POLLUTANTS, "pollutant");
+buttons("method", METHODS, "method");
+buttons("year", YEARS.map(y => [y, y]), "year");
+
+function markPressed() {
+  document.querySelectorAll(".group button").forEach(b => {
+    const key = b.parentElement.dataset.key;
+    b.setAttribute("aria-pressed", String(b.dataset.id === state[key]));
+  });
+}
+
+function base() {
+  return `results/${state.pollutant}/${state.method}/${state.year}`;
+}
+
+function num(value, digits = 2) {
+  if (value === undefined || value === null || value === "") return "—";
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toFixed(digits) : "—";
+}
+
+function figure(src, caption) {
+  const f = document.createElement("figure");
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = caption;
+  const cap = document.createElement("figcaption");
+  cap.textContent = caption;
+  f.append(img, cap);
+  return f;
+}
+
+async function readCsv(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(url);
+  const text = await response.text();
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(",");
+  return lines.slice(1).filter(Boolean).map(line => {
+    const cells = line.split(",");
+    const row = {};
+    headers.forEach((h, i) => { row[h] = cells[i]; });
+    return row;
+  });
+}
+
+function card(label, value, better) {
+  const el = document.createElement("div");
+  el.className = "card";
+  el.innerHTML = `<div class="k">${label}</div><div class="v${better ? " better" : ""}">${value}</div>`;
+  return el;
+}
+
+async function render() {
+  markPressed();
+  const year = state.year;
+  const label = POLLUTANTS.find(p => p[0] === state.pollutant)[1];
+  const method = METHODS.find(m => m[0] === state.method)[1];
+  const note = document.getElementById("note");
+  note.textContent = year === "2015"
+    ? `${label} · ${method} · 2015. NILU cross-validation: Active = 0 stations only. The bias was fitted on Active = 1.`
+    : `${label} · ${method} · ${year}. Every station in the yearly observation file, compared with the raw EMEP scenario and the bias-corrected scenario.`;
+
+  const status = document.getElementById("status");
+  status.textContent = "";
+  const root = base();
+
+  document.getElementById("fields").replaceChildren(
+    figure(`${root}/emep.png`, year === "2015" ? "Raw EMEP 2015" : `Raw EMEP ${year}`),
+    ...(year === "2015" ? [figure(`${root}/bias.png`, method === "Additive" ? "Interpolated bias" : "Interpolated bias ratio")] : []),
+    figure(`${root}/corrected.png`, year === "2015" ? "Corrected 2015" : `Corrected scenario ${year}`)
+  );
+  document.getElementById("stations").replaceChildren(
+    figure(`${root}/scatter.png`, "Stations: observation against model"),
+    figure(`${root}/country.png`, "Country means")
+  );
+  const searchBlock = document.getElementById("search-block");
+  searchBlock.classList.toggle("hidden", year !== "2015");
+  if (year === "2015") {
+    document.getElementById("search").replaceChildren(
+      figure(`${root}/rmse_heatmap.png`, "RMSE over p and k"),
+      figure(`${root}/mae_heatmap.png`, "MAE over p and k"),
+      figure(`${root}/mbe_heatmap.png`, "MBE over p and k")
+    );
+  }
+
+  try {
+    const summary = (await readCsv(`${root}/summary.csv`))[0];
+    const cards = document.getElementById("cards");
+    cards.replaceChildren(
+      card("Stations", summary.N),
+      card("RMSE raw", num(summary.RMSE_Raw)),
+      card("RMSE corrected", num(summary.RMSE_Corrected), true),
+      card("MAE corrected", num(summary.MAE_Corrected)),
+      card("Bias corrected", num(summary.Bias_Corrected)),
+      card("R² corrected", num(summary.R2true_Corrected))
+    );
+    if (year === "2015") {
+      const best = (await readCsv(`${root}/best_params.csv`))[0];
+      cards.append(
+        card("Best p", num(best.p, 1)),
+        card("Best k", String(Math.round(Number(best.k))))
+      );
+    }
+
+    const countries = await readCsv(`${root}/country.csv`);
+    const headers = ["Country", "N", "RMSE raw", "RMSE corrected", "Bias raw", "Bias corrected", "R² raw", "R² corrected"];
+    const keys = ["Country", "N", "RMSE_Raw", "RMSE_Corrected", "Bias_Raw", "Bias_Corrected", "R2_Raw", "R2_Corrected"];
+    const table = document.getElementById("countries");
+    table.innerHTML = "<thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr></thead>";
+    const body = document.createElement("tbody");
+    countries.forEach(row => {
+      const tr = document.createElement("tr");
+      keys.forEach((key, i) => {
+        const td = document.createElement("td");
+        td.textContent = i < 2 ? row[key] : num(row[key]);
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+  } catch (error) {
+    status.textContent = "Could not load the tables for this selection.";
+  }
+
+  const downloads = document.getElementById("downloads");
+  const links = [
+    ["summary.csv", "Summary"],
+    ["country.csv", "Countries"],
+    ["stations.csv", "Stations"]
+  ];
+  if (year === "2015") links.push(["idw_search.csv", "All (p, k) scores"], ["best_params.csv", "Best (p, k)"]);
+  downloads.replaceChildren(...links.map(([file, label]) => {
+    const a = document.createElement("a");
+    a.href = `${root}/${file}`;
+    a.textContent = label;
+    return a;
+  }));
+}
+
+function readHash() {
+  const parts = location.hash.replace(/^#/, "").split("/");
+  if (parts.length === 3 && POLLUTANTS.some(p => p[0] === parts[0]) && METHODS.some(m => m[0] === parts[1]) && YEARS.includes(parts[2])) {
+    state.pollutant = parts[0];
+    state.method = parts[1];
+    state.year = parts[2];
+  }
+}
+window.addEventListener("hashchange", () => { readHash(); render(); });
+readHash();
+render();
+</script>
+</body>
+</html>
