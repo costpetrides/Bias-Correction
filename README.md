@@ -19,3 +19,9 @@ Pollutants are `NO2`, `O3` and `PM25`. Methods are `IDW_ADD` (additive) and `IDW
 Each year folder contains the maps, the station scatter, the country plot, `summary.csv`, `country.csv` and `stations.csv`. The 2015 folder also contains `best_params.csv` and `idw_search.csv`.
 
 Model NetCDF files and the original observation files are not in this repository.
+
+## NO₂ Temporal Calibration Gap Experiment
+
+This is a separate category, not one of the Phase 2 pollutant pages. Open `#NO2/TEMPORAL_GAP`.
+
+The files are in `results/NO2/TEMPORAL_GAP/`. It keeps the NO₂ additive method and the frozen parameters p = 0.3, k = 13. The 2015, 2022 and 2023 calibrations use the same 1030 stations and are scored on 2024. The official Active = 1 result is shown only as a reference from a different training network.

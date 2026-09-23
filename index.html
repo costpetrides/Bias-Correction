@@ -77,6 +77,11 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
   }
+  .years-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .wide { display: grid; gap: 12px; }
+  [hidden] { display: none !important; }
+  #category { flex-basis: 100%; }
+  tr.reference td { color: var(--muted); }
   .year h3 {
     margin: 0 0 8px;
     font-size: 15px;
@@ -156,10 +161,10 @@
   }
   #status { color: var(--raw); }
   @media (max-width: 980px) {
-    .years { grid-template-columns: 1fr 1fr; }
+    .years, .years-3 { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
-    .years { grid-template-columns: 1fr; }
+    .years, .years-3 { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -170,13 +175,15 @@
 </header>
 <div class="controls">
   <div class="controls-inner">
+    <div class="group" id="category" data-key="category"><span>Category</span></div>
     <div class="group" id="pollutant" data-key="pollutant"><span>Pollutant</span></div>
     <div class="group" id="method" data-key="method"><span>Method</span></div>
   </div>
 </div>
 <main>
-  <p class="note" id="note"></p>
   <p id="status"></p>
+  <div id="phase2">
+  <p class="note" id="note"></p>
   <h2>All years</h2>
   <div class="table-wrap"><table id="summary"></table></div>
   <h2>Stations</h2>
@@ -190,6 +197,22 @@
   <div class="years" id="search"></div>
   <h2>Tables</h2>
   <div class="downloads" id="downloads"></div>
+  </div>
+  <div id="temporal" hidden>
+    <p class="note" id="temporal-note"></p>
+    <h2>2024 comparison</h2>
+    <div class="table-wrap"><table id="temporal-summary"></table></div>
+    <h2>Metrics</h2>
+    <div class="wide" id="temporal-metrics"></div>
+    <h2>Stations</h2>
+    <div class="years years-3" id="temporal-scatters"></div>
+    <h2>Countries</h2>
+    <div class="years years-3" id="temporal-countries"></div>
+    <h2>Together</h2>
+    <div class="wide" id="temporal-overview"></div>
+    <h2>Tables</h2>
+    <div class="downloads" id="temporal-downloads"></div>
+  </div>
 </main>
 <div id="viewer" role="dialog" aria-modal="true" aria-label="Plot">
   <button class="close" type="button" aria-label="Close">×</button>
@@ -201,8 +224,17 @@
 <script>
 const POLLUTANTS = [["NO2", "NO₂"], ["O3", "O₃"], ["PM25", "PM2.5"]];
 const METHODS = [["IDW_ADD", "Additive"], ["IDW_MULT", "Multiplicative"]];
+const CATEGORIES = [
+  ["PHASE2", "Phase 2 results"],
+  ["TEMPORAL_GAP", "NO₂ Temporal Calibration Gap Experiment"]
+];
 const YEARS = ["2015", "2022", "2023", "2024"];
-const state = { pollutant: "NO2", method: "IDW_ADD" };
+const state = { category: "PHASE2", pollutant: "NO2", method: "IDW_ADD" };
+
+function hashForState() {
+  if (state.category === "TEMPORAL_GAP") return "NO2/TEMPORAL_GAP";
+  return `${state.pollutant}/${state.method}`;
+}
 
 function buttons(container, items, key) {
   const el = document.getElementById(container);
@@ -213,12 +245,14 @@ function buttons(container, items, key) {
     b.dataset.id = id;
     b.addEventListener("click", () => {
       state[key] = id;
-      location.hash = `${state.pollutant}/${state.method}`;
+      if (key !== "category") state.category = "PHASE2";
+      location.hash = hashForState();
       render();
     });
     el.appendChild(b);
   });
 }
+buttons("category", CATEGORIES, "category");
 buttons("pollutant", POLLUTANTS, "pollutant");
 buttons("method", METHODS, "method");
 
@@ -257,11 +291,11 @@ const viewerCaption = viewer.querySelector(".caption");
 let viewerIndex = 0;
 
 function gallery() {
-  return [...document.querySelectorAll("main img")];
+  return [...document.querySelectorAll("main img")].filter(img => !img.closest("[hidden]"));
 }
 
 function plotCaption(img) {
-  const box = img.closest(".years, .map-grid");
+  const box = img.closest(".years, .map-grid, .wide");
   let heading = "";
   if (box) {
     let el = box.previousElementSibling;
@@ -337,10 +371,25 @@ async function readCsv(url) {
 
 let renderToken = 0;
 
-async function render() {
+function showCategory() {
+  const temporal = state.category === "TEMPORAL_GAP";
+  document.getElementById("phase2").hidden = temporal;
+  document.getElementById("temporal").hidden = !temporal;
+  document.getElementById("pollutant").hidden = temporal;
+  document.getElementById("method").hidden = temporal;
+  document.querySelector("header h1").textContent = temporal
+    ? "NO₂ Temporal Calibration Gap Experiment"
+    : "IDW bias correction";
+  document.querySelector("header p").textContent = temporal
+    ? "A separate NO₂ diagnostic. It does not replace the Phase 2 results."
+    : "One page for a pollutant and a method, with 2015 and the three scenario years together.";
+  document.title = temporal
+    ? "NO₂ Temporal Calibration Gap Experiment"
+    : "Bias correction results";
+}
+
+async function renderPhase2() {
   const token = ++renderToken;
-  closeViewer();
-  markPressed();
   const label = POLLUTANTS.find(p => p[0] === state.pollutant)[1];
   const method = METHODS.find(m => m[0] === state.method)[1];
   document.getElementById("note").textContent =
@@ -420,8 +469,101 @@ async function render() {
   }
 }
 
+async function renderTemporal() {
+  const token = ++renderToken;
+  document.getElementById("temporal-note").textContent =
+    "Same NO₂ IDW additive method, frozen at p = 0.3 and k = 13. The 2015, 2022 and 2023 arms use the same 1030 stations (PT03093 excluded) and are projected to 2024. Scores use all 1031 TRUTH stations. The official 2015 Active = 1 row is a reference from a different training network, not part of the matched comparison.";
+  const base = "results/NO2/TEMPORAL_GAP";
+  const arms = [
+    ["2015 matched → 2024", "scatter_2015_matched.png", "country_2015_matched.png"],
+    ["2022 → 2024", "scatter_2022.png", "country_2022.png"],
+    ["2023 → 2024", "scatter_2023.png", "country_2023.png"]
+  ];
+  document.getElementById("temporal-metrics").replaceChildren(
+    figure(`${base}/metrics_comparison.png`, "RMSE, MAE and bias")
+  );
+  document.getElementById("temporal-scatters").replaceChildren(...arms.map(([label, scatter]) =>
+    yearColumn(label, [figure(`${base}/${scatter}`, "Observed against model")])
+  ));
+  document.getElementById("temporal-countries").replaceChildren(...arms.map(([label, , country]) =>
+    yearColumn(label, [figure(`${base}/${country}`, "Country means")])
+  ));
+  document.getElementById("temporal-overview").replaceChildren(
+    figure(`${base}/scatter_panels.png`, "Three calibrations together"),
+    figure(`${base}/country_comparison.png`, "Country means together")
+  );
+  const downloads = document.getElementById("temporal-downloads");
+  downloads.replaceChildren(...[
+    ["summary.csv", "Summary"],
+    ["comparison_2024.csv", "Comparison"],
+    ["country_2024.csv", "Countries"],
+    ["stations_2024.csv", "Stations"]
+  ].map(([file, name]) => {
+    const a = document.createElement("a");
+    a.href = `${base}/${file}`;
+    a.textContent = name;
+    return a;
+  }));
+
+  try {
+    const rows = await readCsv(`${base}/summary.csv`);
+    if (token !== renderToken) return;
+    const headers = ["Experiment", "Role", "Stations", "RMSE", "MAE", "Bias", "R", "R²corr", "R²true", "Training stations", "p", "k"];
+    const table = document.getElementById("temporal-summary");
+    table.innerHTML = "<thead><tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr></thead>";
+    const body = document.createElement("tbody");
+    const temporal = rows.filter(row => row.role === "temporal_gap");
+    const bestRmse = Math.min(...temporal.map(row => Number(row.RMSE)));
+    const roleLabel = { baseline: "baseline", reference: "reference", temporal_gap: "temporal gap" };
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+      if (row.role === "reference") tr.className = "reference";
+      const cells = [
+        row.label,
+        roleLabel[row.role] || row.role,
+        row.N,
+        num(row.RMSE),
+        num(row.MAE),
+        num(row.Bias),
+        num(row.R),
+        num(row.R2corr),
+        num(row.R2true),
+        row.training_stations || "—",
+        row.p ? num(row.p, 1) : "—",
+        row.k || "—"
+      ];
+      cells.forEach((value, j) => {
+        const td = document.createElement("td");
+        td.textContent = value;
+        if (j === 3 && row.role === "temporal_gap" && Math.abs(Number(row.RMSE) - bestRmse) < 1e-9) {
+          td.className = "better";
+        }
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+  } catch (error) {
+    if (token === renderToken) document.getElementById("status").textContent = "Could not load the temporal-gap summary.";
+  }
+}
+
+function render() {
+  closeViewer();
+  markPressed();
+  showCategory();
+  document.getElementById("status").textContent = "";
+  if (state.category === "TEMPORAL_GAP") renderTemporal();
+  else renderPhase2();
+}
+
 function readHash() {
   const parts = location.hash.replace(/^#/, "").split("/");
+  if (parts[0] === "NO2" && parts[1] === "TEMPORAL_GAP") {
+    state.category = "TEMPORAL_GAP";
+    return;
+  }
+  state.category = "PHASE2";
   if (parts.length >= 2 && POLLUTANTS.some(p => p[0] === parts[0]) && METHODS.some(m => m[0] === parts[1])) {
     state.pollutant = parts[0];
     state.method = parts[1];
